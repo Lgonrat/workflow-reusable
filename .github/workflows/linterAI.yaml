@@ -23,3 +23,23 @@ jobs:
         run: |
           git fetch origin main
           git diff origin/main...HEAD > diff.txt
+
+      - name: Publicar diff en la PR
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const diff = fs.readFileSync('diff.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.payload.pull_request.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `📝 **Diff detectado por el workflow:**\n\n\`\`\`diff\n${diff}\n\`\`\``
+            });
+
+      - name: Subir artefacto diff
+        uses: actions/upload-artifact@v4
+        with:
+          name: diff-pr
+          path: diff.txt
+          retention-days: 1
