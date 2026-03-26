@@ -31,4 +31,5 @@ Este workflow es útil para:
 ## 📁 ¿Cómo usarlo desde otro repositorio?
 
 Crea este archivo en el repo donde quieras activar el análisis automático de PRs: **.github/workflows/linter-on-actions-pr.yml**
+
 Con esto, cada vez que se abra o actualice una PR, se ejecutará el Linter IA.
