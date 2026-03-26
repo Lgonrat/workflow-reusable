@@ -1,12 +1,14 @@
 name: Linter IA
-description: Analiza cambios en una PR y genera resumen IA (sin Copilot)
+description: Analiza cambios en una PR y genera resumen IA
 
 on:
   workflow_call:
     inputs:
-      DIFF_CONTENT:
-        required: true
+      BASE_BRANCH:
+        description: 'Rama base contra la que comparar'
         type: string
+        required: false
+        default: 'main'
 
 permissions:
   contents: read
@@ -17,36 +19,53 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       summary_output_file: ${{ steps.save-summary.outputs.summary_output_file }}
-
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Crear resumen sin IA
+      - name: Get changed files
+        id: diff
         run: |
+          if [ -n "${{ github.event.pull_request.number }}" ]; then
+            echo "Detected PR #${{ github.event.pull_request.number }}"
+            git fetch origin pull/${{ github.event.pull_request.number }}/merge:pr-merge
+            git diff pr-merge...HEAD > diff.txt
+          else
+            echo "No PR detected, falling back to BASE_BRANCH diff"
+            git fetch origin ${{ inputs.BASE_BRANCH }}
+            git diff origin/${{ inputs.BASE_BRANCH }}...HEAD > diff.txt
+          fi
+
+      
+      - name: Crear resumen para publicar como comentario (sin Copilot)
+        run: |  
           echo "Resumen generado sin Copilot." > linter-summary.md
           echo "" >> linter-summary.md
-          echo "=== CAMBIOS DETECTADOS ===" >> linter-summary.md
-          echo "" >> linter-summary.md
-          echo "${{ inputs.DIFF_CONTENT }}" >> linter-summary.md
+          echo "Archivos modificados:" >> linter-summary.md
+          cat diff.txt >> linter-summary.m
 
-      - name: Comentar resumen en la PR
+      - name: Publicar comentario en la PR
         uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
             const resumen = fs.readFileSync('linter-summary.md', 'utf8');
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🤖 **Resumen Linter IA (modo sin IA)**\n\n${resumen}`
+              body: `🤖 **Resumen Linter IA (modo sin IA):**\n\n${resumen}`
             });
 
       - name: Guardar output de summary
         id: save-summary
         run: echo "summary_output_file=linter-summary.md" >> $GITHUB_OUTPUT
 
-      - name: Upload summary artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: linter-summary
           path: linter-summary.md
+          retention-days: 1
