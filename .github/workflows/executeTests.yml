@@ -1,0 +1,5 @@
+name: Execute Tests
+description: Execute Tests from DB
+
+on:
+  workflow_call:

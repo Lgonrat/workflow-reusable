@@ -1,17 +1,33 @@
 name: Linter IA
-description: Linter IA
+description: Analiza cambios en una PR y genera resumen IA
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_call:
+    inputs:
+      BASE_BRANCH:
+        description: 'Rama base contra la que comparar'
+        type: string
+        required: false
+        default: 'main'
+      PROMPT:
+        description: 'Prompt personalizado para GitHub Copilot'
+        type: string
+        required: false
+        default: 'Analiza los cambios y resume entradas nuevas, cambios de versión y validaciones necesarias'
+    outputs:
+      summary_output_file:
+        description: 'Path del resumen generado'
+        value: ${{ jobs.linter_ia.outputs.summary_output_file }}
 
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
-  linter-ia:
+  linter_ia:
     runs-on: ubuntu-latest
+    outputs:
+      summary_output_file: ${{ steps.save-summary.outputs.summary_output_file }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,8 +37,8 @@ jobs:
       - name: Get changed files
         id: diff
         run: |
-          git fetch origin main
-          git diff origin/main...HEAD > diff.txt
+          git fetch origin ${{ inputs.BASE_BRANCH }}
+          git diff origin/${{ inputs.BASE_BRANCH }}...HEAD > diff.txt
 
       - name: Set up Node.js environment
         uses: actions/setup-node@v4
@@ -34,7 +50,10 @@ jobs:
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          copilot -p "Analiza los siguientes cambios en la PR y resume las modificaciones, entradas nuevas, cambios de versión y pasos relevantes:\n$(cat diff.txt)" --allow-tool='shell(git:*)' --allow-tool=write --no-ask-user
+          copilot -p "${{ inputs.PROMPT }}\n$(cat diff.txt)" \
+            --allow-tool='shell(git:*)' \
+            --allow-tool=write \
+            --no-ask-user
           mv copilot.md linter-summary.md
 
       - name: Publicar comentario en la PR
@@ -50,7 +69,11 @@ jobs:
               body: `🤖 **Resumen Linter IA:**\n\n${resumen}`
             });
 
-      - name: Subir artefacto de resumen
+      - name: Guardar output de summary
+        id: save-summary
+        run: echo "summary_output_file=linter-summary.md" >> $GITHUB_OUTPUT
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: linter-summary
