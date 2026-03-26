@@ -20,24 +20,16 @@ jobs:
     outputs:
       summary_output_file: ${{ steps.save-summary.outputs.summary_output_file }}
     steps:
-      - name: Checkout
+      - name: Checkout PR HEAD
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
 
       - name: Get changed files
-        id: diff
         run: |
-          if [ -n "${{ github.event.pull_request.number }}" ]; then
-            echo "Detected PR #${{ github.event.pull_request.number }}"
-            git fetch origin pull/${{ github.event.pull_request.number }}/merge:pr-merge
-            git diff pr-merge...HEAD > diff.txt
-          else
-            echo "No PR detected, falling back to BASE_BRANCH diff"
-            git fetch origin ${{ inputs.BASE_BRANCH }}
-            git diff origin/${{ inputs.BASE_BRANCH }}...HEAD > diff.txt
-          fi
-
+          git fetch origin ${{ inputs.BASE_BRANCH }}
+          git diff origin/${{ inputs.BASE_BRANCH }}...HEAD > diff.txt
       
       - name: Crear resumen para publicar como comentario (sin Copilot)
         run: |  
