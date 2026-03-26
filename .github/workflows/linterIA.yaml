@@ -30,9 +30,13 @@ jobs:
         run: |
           git fetch origin ${{ inputs.BASE_BRANCH }}
           git diff origin/${{ inputs.BASE_BRANCH }}...HEAD > diff.txt
-
-      - name: Set up Node.js environment
-        uses: actions/setup-node@v4
+      
+      - name: Crear resumen para publicar como comentario (sin Copilot)
+        run: |  
+          echo "Resumen generado sin Copilot." > linter-summary.md
+          echo "" >> linter-summary.md
+          echo "Archivos modificados:" >> linter-summary.md
+          cat diff.txt >> linter-summary.m
 
       - name: Publicar comentario en la PR
         uses: actions/github-script@v8
@@ -44,7 +48,7 @@ jobs:
               issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🤖 **Resumen Linter IA:**\n\n${resumen}`
+              body: `🤖 **Resumen Linter IA (modo sin IA):**\n\n${resumen}`
             });
 
       - name: Guardar output de summary
