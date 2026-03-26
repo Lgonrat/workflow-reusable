@@ -9,15 +9,6 @@ on:
         type: string
         required: false
         default: 'main'
-      PROMPT:
-        description: 'Prompt personalizado para GitHub Copilot'
-        type: string
-        required: false
-        default: 'Analiza los cambios y resume entradas nuevas, cambios de versión y validaciones necesarias'
-    outputs:
-      summary_output_file:
-        description: 'Path del resumen generado'
-        value: ${{ jobs.linter_ia.outputs.summary_output_file }}
 
 permissions:
   contents: read
@@ -42,19 +33,6 @@ jobs:
 
       - name: Set up Node.js environment
         uses: actions/setup-node@v4
-
-      - name: Set up Copilot CLI
-        uses: actions/setup-copilot@v0.0.5
-
-      - name: Run Copilot CLI
-        env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        run: |
-          copilot -p "${{ inputs.PROMPT }}\n$(cat diff.txt)" \
-            --allow-tool='shell(git:*)' \
-            --allow-tool=write \
-            --no-ask-user
-          mv copilot.md linter-summary.md
 
       - name: Publicar comentario en la PR
         uses: actions/github-script@v8
