@@ -1,5 +1,5 @@
-name: Linter IA
-description: Analiza cambios en una PR y genera resumen IA
+name: 'Linter IA'
+description: 'Analiza cambios en una PR y genera resumen IA'
 
 on:
   workflow_call:
@@ -10,18 +10,18 @@ on:
         required: false
         default: 'main'
 
-permissions:
-  contents: read
-  pull-requests: write
+
 
 jobs:
   linter_ia:
+    name: Linter IA
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     outputs:
       summary_output_file: ${{ steps.save-summary.outputs.summary_output_file }}
-
     steps:
-
       - name: Checkout PR merge ref
         uses: actions/checkout@v4
         with:
