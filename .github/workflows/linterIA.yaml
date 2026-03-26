@@ -4,11 +4,10 @@ description: Analiza cambios en una PR y genera resumen IA
 on:
   workflow_call:
     inputs:
-      BASE_BRANCH:
+      DIFF_CONTENT:
         description: 'Rama base contra la que comparar'
         type: string
-        required: false
-        default: 'main'
+        required: true
 
 permissions:
   contents: read
@@ -19,24 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       summary_output_file: ${{ steps.save-summary.outputs.summary_output_file }}
-    steps:
-      - name: Checkout PR HEAD
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: refs/pull/${{ github.event.pull_request.number }}/head
-
-      - name: Get changed files
-        run: |
-          git fetch origin ${{ inputs.BASE_BRANCH }}
-          git diff origin/${{ inputs.BASE_BRANCH }}...HEAD > diff.txt
-      
+    steps:      
       - name: Crear resumen para publicar como comentario (sin Copilot)
         run: |  
           echo "Resumen generado sin Copilot." > linter-summary.md
           echo "" >> linter-summary.md
-          echo "Archivos modificados:" >> linter-summary.md
-          cat diff.txt >> linter-summary.m
+          echo "=== CAMBIOS DETECTADOS ===" >> linter-summary.md
+          echo "" >> linter-summary.md
+          echo "${{ inputs.DIFF_CONTENT }}" >> linter-summary.md
 
       - name: Publicar comentario en la PR
         uses: actions/github-script@v8
