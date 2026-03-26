@@ -10,8 +10,6 @@ on:
         required: false
         default: 'main'
 
-
-
 jobs:
   linter_ia:
     name: Linter IA

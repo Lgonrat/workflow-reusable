@@ -1,0 +1,62 @@
+name: 'Test Plan IA'
+description: 'Genera un plan mínimo de pruebas a partir del resumen del Linter IA y lo publica en la PR.'
+
+on:
+  workflow_call:
+    inputs:
+      SUMMARY_FILE:
+        description: 'Ruta archivo generado por Linter IA'
+        type: string
+        required: true
+
+jobs:
+  test_plan_ia:
+    name: Test plan IA
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      selected_ids: ${{ steps.set-output.outputs.selected_ids }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Descargar resumen del Linter IA
+        uses: actions/download-artifact@v4
+        with:
+          name: linter-summary
+      
+      - name: Extraer keywords del resumen
+        id: extract
+        run: |
+          echo "Detectanto keywords del resumen..."
+
+          SUMMARY_CONTENT=$(cat linter-summary.md | tr '[:upper:]' '[:lower:]')
+
+          # Lista de keywords
+          KEYWORDS="install dependency version update error package script"
+
+          MATCHED=""
+          for k in $KEYWORDS; do
+            if echo "$SUMMARY_CONTENT" | grep -q "$k"; then   #-q hace que no muestre salida, solo devuelva true/false.
+              MATCHED="$MATCHED $k"
+            fi
+          done
+
+          echo "keywords detectadas: $MATCHED"
+          echo "keywords_detected=$MATCHED" >> GITHUB_OUTPUT
+      
+      - name: Comentar en la PR
+        uses: actions/github-script@v8
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🧩 **Keywords detectadas en el resumen:**\n\n${{ steps.extract.outputs.keywords_detected }}`
+            });
+
