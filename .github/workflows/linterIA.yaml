@@ -3,6 +3,10 @@ description: Analiza cambios en una PR y genera resumen IA (sin Copilot)
 
 on:
   workflow_call:
+    inputs:
+      DIFF_CONTENT:
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -15,11 +19,6 @@ jobs:
       summary_output_file: ${{ steps.save-summary.outputs.summary_output_file }}
 
     steps:
-      - name: Download diff from caller
-        uses: actions/download-artifact@v4
-        with:
-          name: pr-diff
-          path: .
 
       - name: Crear resumen sin IA
         run: |
@@ -27,9 +26,9 @@ jobs:
           echo "" >> linter-summary.md
           echo "=== CAMBIOS DETECTADOS ===" >> linter-summary.md
           echo "" >> linter-summary.md
-          cat diff.txt >> linter-summary.md
+          echo "${{ inputs.DIFF_CONTENT }}" >> linter-summary.md
 
-      - name: Publicar comentario en la PR
+      - name: Comentar resumen en la PR
         uses: actions/github-script@v8
         with:
           script: |
@@ -46,9 +45,8 @@ jobs:
         id: save-summary
         run: echo "summary_output_file=linter-summary.md" >> $GITHUB_OUTPUT
 
-      - name: Upload artifact
+      - name: Upload summary artifact
         uses: actions/upload-artifact@v4
         with:
           name: linter-summary
           path: linter-summary.md
-          retention-days: 1
