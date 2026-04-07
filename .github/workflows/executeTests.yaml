@@ -1,0 +1,27 @@
+name: 'Execute Test'
+description: 'Busca en la base de datos de test los test a ejecutar partiendo de las KEYWORDS obtenidas en testPlanIA'
+
+on:
+  workflow_call:
+    inputs:
+      KEYWORDS:
+        description: 'keywords generadas por testPlanIA'
+        type: string
+        required: true
+
+jobs:
+  execute_test:
+    name: Test plan IA
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      keywords_detected: ${{ steps.extract.outputs.keywords_detected }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Download artifact
